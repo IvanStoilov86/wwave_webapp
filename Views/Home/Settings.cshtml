@@ -1,0 +1,275 @@
+﻿@using System.Data.SqlClient;
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor;
+
+<body>
+
+@{ var cookieoptions= new CookieOptions{Path="/"};
+
+HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+
+string? uname= HttpContextAccessor?.HttpContext?.Request.Cookies["uname"];
+
+
+var cfg= WebApplication.CreateBuilder().Configuration;
+string? connStr= cfg.GetValue<string>("ConnectionString");
+
+SqlConnection conn= new SqlConnection(connStr);
+string sql= "select * from dbo.users where uname='"+uname+"'";
+
+string? dname="";
+string? pword="";
+string? email="";
+string? phnumber="";
+string? location="";
+string? contact="";
+
+string? bgurl="";
+
+
+conn.Open();
+SqlCommand cmd= new SqlCommand(sql,conn);
+SqlDataReader rdr= cmd.ExecuteReader();
+
+while(rdr.Read()){
+
+dname= (string?)rdr[1];
+pword= (string?)rdr[2];
+email= (string?)rdr[3];
+phnumber= (string?)rdr[4];
+location= (string?)rdr[5];
+contact= (string?)rdr[6];
+
+bgurl= (string?)rdr[8].ToString();
+
+} rdr.Close();
+conn.Close();
+
+
+
+
+
+string? servcommand= HttpContextAccessor?.HttpContext?.Request.Cookies["cmd"];
+
+if(servcommand=="savesettings"){
+
+conn= new SqlConnection(connStr);
+sql= "update dbo.users set "+
+"dname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["dname"]+"',"+
+"pword='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["pword"]+"',"+
+"email='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["email"]+"',"+
+"phnumber='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["phnumber"]+"',"+
+"location='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["location"]+"',"+
+"contact='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["contact"]+"',"+
+"set_bgurl='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["bgurl"]+"' "+
+
+"where uname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"'"
+
+;
+
+conn.Open();
+SqlCommand command= new SqlCommand(sql,conn);
+rdr= command.ExecuteReader();
+
+while(rdr.Read()){
+} rdr.Close();
+conn.Close();
+
+HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+
+<script>window.location=window.location</script>
+
+}
+
+
+
+
+
+if(servcommand=="deleteuser"){
+
+conn= new SqlConnection(connStr);
+sql= "delete from dbo.users where uname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"';";
+
+conn.Open();
+SqlCommand command= new SqlCommand(sql,conn);
+rdr= command.ExecuteReader();
+
+while(rdr.Read()){
+} rdr.Close();
+conn.Close();
+
+
+
+conn= new SqlConnection(connStr);
+sql= "drop table dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+";";
+
+conn.Open();
+command= new SqlCommand(sql,conn);
+rdr= command.ExecuteReader();
+
+while(rdr.Read()){
+} rdr.Close();
+conn.Close();
+
+HttpContextAccessor?.HttpContext?.Response.Cookies.Append("uname_login","",cookieoptions);
+
+<script>window.postMessage('refresh');</script>
+}
+
+
+}
+
+
+
+<fieldset style="border-radius:30px 30px 15% 15%"><legend><button onclick="window.postMessage('goto mainmenu from settings')"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Back_Arrow.svg/800px-Back_Arrow.svg.png?20131211215511" style="width:20px"></button>&nbsp;
+<text style="background:white; border:2px solid white; border-radius:500px"><b>Settings</b></text>
+<fieldset id="save_button" style="display:inline-block; cursor:pointer" title="Save">
+💾
+</fieldset></legend>
+
+
+<center style="overflow:hidden">
+
+
+<div>
+<div style="background:linear-gradient(180deg,#FFF0,#FFF,#FFF0)">
+<h2 style="display:inline-block">Account</h2><br>
+
+
+<fieldset style="display:inline-block">
+Display name<br><input type="text" id="Dname" value="@dname" maxlength=60>
+</fieldset>
+<fieldset style="display:inline-block">
+Password<br><input type="password" id="Pword" value="@pword" maxlength=60>
+</fieldset>
+<fieldset style="display:inline-block">
+Email<br><input type="email" id="Email" value="@email">
+</fieldset>
+<fieldset style="display:inline-block">
+Phone number&nbsp;<text style="background:#FF6; color:black; border-radius:40px">(optional)</text><br><input type="tel" id="Phnumber" value="@phnumber">
+</fieldset><br>
+<fieldset style="display:inline-block">
+Additional contact&nbsp;<text style="background:#FF6; color:black; border-radius:40px">(optional)</text><br><textarea id="Contact" rows="4" cols="80" style="font-family:arial">@contact</textarea>
+</fieldset><br>
+<fieldset style="display:inline-block">
+Location<br><input type="text" id="Location" value="@location">
+</fieldset>
+<br>
+
+<!-- hidden element -->
+<fieldset style="display:inline-block; visibility:hidden; position:absolute">
+bgurl:&nbsp;<input id="Bgurl" type="text" value="@bgurl">
+</fieldset>
+
+
+<br><br><br>
+<img src="data:image/gif;base64,R0lGODdhAQABAIABAAAAAAAAACwAAAAAAQABAAACAkwBADs=" style="width:100%; height:4px">
+</div>
+</div>
+<br>
+<div>
+<div style="background:linear-gradient(180deg,#FFF0,#FFF,#FFF0)">
+<h2 style="display:inline-block">Customization</h2><br>
+
+
+<fieldset style="display:inline-block; border-radius:30px 30px 30% 30%">
+<table>
+<tbody>
+<tr>
+
+<td><img src="https://mir-s3-cdn-cf.behance.net/project_modules/source/ba056770455143.5ba3cb5ce2161.gif" style="height:64px; cursor:pointer" id="bg01"></td>
+<td><img src="https://i.makeagif.com/media/12-21-2015/UPuNC9.gif" style="height:64px; cursor:pointer" id="bg02"></td>
+<td><img src="https://wallpapers-clan.com/wp-content/uploads/2024/03/starfall-night-sky-mountains-aesthetic-gif-cover-desktop-wallpaper.gif" style="height:64px; cursor:pointer" id="bg03"></td>
+<td><img src="https://64.media.tumblr.com/a7d100aabe2033b2fff1b7d5bf6af05f/tumblr_nlprx4nuGI1relaado1_400.gif" style="height:64px; cursor:pointer" id="bg04"></td>
+<td><img src="https://i.redd.it/lhnvupvps4h91.gif" style="height:64px; cursor:pointer" id="bg05"></td>
+<td><img src="https://i.pinimg.com/originals/1d/30/b5/1d30b5a0c298c02edaf2f501b22a6587.gif" style="height:64px; cursor:pointer" id="bg06"></td>
+
+</tr>
+</tbody>
+</table>
+</fieldset><br>
+
+<fieldset style="display:inline-block">
+Custom image:&nbsp;<input type="text" id="bgcustom"
+value=""
+>&nbsp;<button onclick="document.getElementById('Bgurl').value= document.getElementById('bgcustom').value; window.postMessage('bgcustom');">Load</button>
+</fieldset>
+
+<script>
+var sourcebg= document.getElementById("bgcustom").value;
+
+for(c=1;c<7;c++){
+
+if(sourcebg==document.getElementById("bg0"+String(c)).src){
+sourcebg="";
+}else{sourcebg="@bgurl";}
+
+}
+</script>
+
+
+</div>
+</div>
+
+<br><br>
+<img src="data:image/gif;base64,R0lGODdhAQABAIABAAAAAAAAACwAAAAAAQABAAACAkwBADs=" style="width:100%; height:4px">
+
+
+<br>
+
+<fieldset style="display:inline-block; cursor:pointer" onclick="
+if(this.innerText=='More...'){
+document.getElementById('delete_account').style.visibility='visible'; this.innerText='Less...';
+}else{document.getElementById('delete_account').style.visibility='hidden'; this.innerText='More...';}
+">
+More...
+</fieldset>
+<fieldset id="delete_account" style="display:inline-block; color:red; position:absolute; cursor:pointer; visibility:hidden" onclick="if(confirm('Are you really sure you want to delete your account? THIS ACTION IS IRREVERSIBLE.')==true){if(prompt('Please type in &quot;I confirm my choice&quot;.')==='I confirm my choice'){document.cookie= 'cmd=deleteuser;path=/'; window.location=window.location;}}">
+DELETE YOUR ACCOUNT
+</fieldset>
+
+</center>
+
+</fieldset>
+
+<script>
+for(c=1;c<7;c++){
+document.getElementById("bg0"+String(c)).addEventListener("click", function(){
+document.getElementById("Bgurl").value= String(this.src); window.postMessage(String(this.id));
+})
+}
+</script>
+
+
+
+
+
+<script>
+document.getElementById("save_button").addEventListener("click", function(){
+
+if(document.getElementById("Dname").value.length>0 && document.getElementById("Pword").value.length>0 && document.getElementById("Email").value.length>0 && document.getElementById("Location").value.length>0){
+
+window.postMessage("save background");
+
+document.cookie= "cmd=savesettings; path=/";
+
+document.cookie= "dname="+encodeURIComponent(document.getElementById("Dname").value)+"; path=/";
+document.cookie= "pword="+encodeURIComponent(document.getElementById("Pword").value)+"; path=/";
+document.cookie= "email="+encodeURIComponent(document.getElementById("Email").value)+"; path=/";
+document.cookie= "phnumber="+encodeURIComponent(document.getElementById("Phnumber").value)+"; path=/";
+document.cookie= "contact="+encodeURIComponent(document.getElementById("Contact").value)+"; path=/";
+document.cookie= "location="+encodeURIComponent(document.getElementById("Location").value)+"; path=/";
+document.cookie= "bgurl="+encodeURIComponent(document.getElementById("Bgurl").value)+"; path=/";
+
+window.location=window.location;
+
+}
+
+})
+</script>
+
+
+
+</body>

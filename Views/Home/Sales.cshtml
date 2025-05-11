@@ -1,0 +1,90 @@
+﻿@using System.Data.SqlClient;
+
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor;
+@{
+var cfg= WebApplication.CreateBuilder().Configuration;
+string? connStr= cfg.GetValue<string>("ConnectionString");
+
+var cookieoptions= new CookieOptions{Path="/"};
+}
+
+
+<style>
+table, td{border:2px solid black; border-collapse:collapse;}
+h3{margin-top:0px; margin-bottom:0px;}
+</style>
+
+<fieldset style="border-radius:30px"><legend><button onclick="window.postMessage('goto mainmenu')"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Back_Arrow.svg/800px-Back_Arrow.svg.png?20131211215511" style="width:20px"></button>&nbsp;
+<text style="background:white; border:2px solid white; border-radius:500px"><b>Sales</b></text></legend>
+
+
+<div id="inventorytable">
+
+<table style="width:100%"><tbody>
+
+<tr>	<td style="background:white"><h3 class="tabletext">ITEM</h3></td> <td style="background: white"><h3 class="tabletext">PRICE</h3></td> <td style="background: white"><h3 class="tabletext">QTY</h3></td> <td style="background:white"><h3 class="tabletext">CATEGORY</h3></td> <td style="background:white"><h3 class="tabletext">TIME</h3></td> <td style="background:white"><h3 class="tabletext">DETAILS</h3></td>	</tr>
+
+@{ SqlConnection conn= new SqlConnection(connStr);
+string sql= "select s_item,s_price,s_qty,s_category,s_time,s_details from dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" order by rowindex";
+
+conn.Open();
+SqlCommand cmd= new SqlCommand(sql,conn);
+SqlDataReader rdr= cmd.ExecuteReader();
+
+int c=0;
+while(rdr.Read()){ if(rdr[0].GetType().ToString()!="System.DBNull"){ c++;
+<tr id="@c" class="tablecontent">
+<td><div class="tabletext">@rdr[0]</div></td>	<td><div class="tabletext">@rdr[1].ToString().Replace(",",".")</div></td>	<td><div class="tabletext">@rdr[2]</div></td> <td><div class="tabletext">@rdr[3]</div></td>	<td><div class="tabletext">@rdr[4]</div></td>	<td><div class="tabletext">@rdr[5]</div></td>
+</tr>
+}}
+}
+
+<tr>	<td style="background:white"><h3 class="tabletext">ITEM</h3></td> <td style="background: white"><h3 class="tabletext">PRICE</h3></td> <td style="background: white"><h3 class="tabletext">QTY</h3></td> <td style="background:white"><h3 class="tabletext">CATEGORY</h3></td> <td style="background:white"><h3 class="tabletext">TIME</h3></td> <td style="background:white"><h3 class="tabletext">DETAILS</h3></td>	</tr>
+
+</tbody></table>
+
+</div>
+
+</fieldset>
+
+<br>
+<br>
+<br>
+<br>
+
+<marquee direction="up" behavior="slide" scrollamount="20" style="position:fixed;bottom:0px">
+<fieldset><legend style="background:white; border-radius:500px" id="sales_legend">0 item(s)</legend>
+
+<center>
+
+<fieldset style="display:inline-block; border-radius:15px; cursor:pointer; background:#F55; color:white" onclick="document.cookie= 'cmd=clearsales;path=/'; window.location=window.location">
+Clear</fieldset>
+
+</center>
+
+</fieldset>
+</marquee>
+
+<script>document.getElementById("sales_legend").innerText= document.querySelector("#inventorytable").getElementsByClassName("tablecontent")[document.querySelector("#inventorytable").getElementsByClassName("tablecontent").length-1].id+" item(s)"</script>
+
+@{
+
+if((string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd"]=="clearsales"){
+
+HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+
+conn= new SqlConnection(connStr);
+sql= "delete from dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" where s_item!='';";
+
+conn.Open();
+cmd= new SqlCommand(sql,conn);
+rdr= cmd.ExecuteReader();
+
+while(rdr.Read()){} rdr.Close(); conn.Close();
+
+<script>window.location=window.location</script>
+
+}
+
+}

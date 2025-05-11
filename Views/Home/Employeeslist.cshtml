@@ -1,0 +1,66 @@
+﻿@using System.Data.SqlClient;
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor;
+
+@{
+
+List<string>uname= new List<string>(0);
+List<string>dname= new List<string>(0);
+List<string>email= new List<string>(0);
+List<string?>phnumber= new List<string?>(0);
+List<string>location= new List<string>(0);
+List<string?>contact= new List<string?>(0);
+List<DateTime>hired= new List<DateTime>(0);
+
+
+var cfg= WebApplication.CreateBuilder().Configuration;
+string? connStr= cfg.GetValue<string>("ConnectionString");
+
+SqlConnection conn= new SqlConnection(connStr);
+string sql= "select uname,dname,email,phnumber,location,contact,hired from dbo.users where uname!='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"'";
+
+conn.Open();
+SqlCommand cmd= new SqlCommand(sql,conn);
+SqlDataReader rdr= cmd.ExecuteReader();
+
+while(rdr.Read()){
+
+uname.Add((string)rdr[0]);
+dname.Add((string)rdr[1]);
+email.Add((string)rdr[2]);
+
+if(rdr[3].GetType().Name.ToString()!="DBNull"){
+phnumber.Add((string?)rdr[3]);}else{phnumber.Add("");}
+
+location.Add((string)rdr[4]);
+
+if(rdr[5].GetType().Name.ToString()!="DBNull"){
+contact.Add((string?)rdr[5]);}else{contact.Add("");}
+hired.Add((DateTime)rdr[6]);
+
+} rdr.Close();
+
+
+}
+
+
+<body>
+
+<table style="background:transparent"><tbody>
+
+@for(int c=0;c<uname.Count;c++){
+<tr>
+<td style="background:#FFFFFFB0"><h3 style="display:inline-block">@dname[c]</h3></td>
+<td style="background:#FFFFFFB0"><b>@uname[c]</b></td>
+<td style="background:#FFFFFFB0">📍@location[c]</td>
+<td style="background:#FFFFFFB0">📧@email[c]</td>
+<td style="background:#FFFFFFB0">📞@phnumber[c]</td>
+<td style="background:#FFFFFFB0"><textarea readonly>@contact[c]</textarea></td>
+<td style="background:#FFFFFFB0">👤@hired[c].ToString("dd.MM.yyyy")</td>
+</tr>}
+
+</tbody></table>
+
+</body>

@@ -1,0 +1,33 @@
+﻿@using System.Data.SqlClient;
+
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor;
+
+<body>
+
+<div class="center" id="login_form">
+
+<center><fieldset style="display:inline-block; width:256px"><legend style="background:white; border-radius:500px">Username</legend>
+<input type="text" style="width:90%; border:4px solid transparent" id="login_uname_field" value="@HttpContextAccessor?.HttpContext?.Request.Cookies["uname"]">
+</fieldset></center><br>
+<center><fieldset style="display:inline-block; width:256px"><legend style="background:white; border-radius:500px">Password</legend>
+<input type="password" style="width:90%; border:4px solid transparent" id="login_pword_field" value="@HttpContextAccessor?.HttpContext?.Request.Cookies["pword"]">
+</fieldset></center><br>
+<center><fieldset style="display:inline-block; cursor:pointer" id="login_button">Log in</fieldset></center>
+
+</div>
+
+
+<script>
+document.getElementById("login_button").addEventListener("click", function(){
+if(document.getElementById("login_uname_field").value.length>0 && document.getElementById("login_pword_field").value.length>0){
+
+document.cookie= "cmd=login; path=/"; document.cookie= "uname="+document.getElementById("login_uname_field").value+"; path=/"; document.cookie= "pword="+document.getElementById("login_pword_field").value+"; path=/"; window.postMessage("refresh");
+
+}
+
+})
+
+</script>
+
+</body>

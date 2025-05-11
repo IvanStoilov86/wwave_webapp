@@ -1,0 +1,97 @@
+﻿@using System.Data.SqlClient;
+
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor;
+
+<body>
+
+<div id="register_form">
+
+<center><fieldset style="display:inline-block"><img src="https://static.wixstatic.com/media/793fee_675c37fccfb64a92b1e10206a63017e2~mv2.gif" style="height:200%"></fieldset></center><br><br>
+
+
+
+@{
+
+List<string> ids= new List<string>(){"uname","dname","pword","rptword","email","phnumber","location"};
+
+List<string> names= new List<string>(){"Username","Display name","Password","Repeat password","Email","Phone number (optional)","Location"};
+
+for(int c=0;c<7;c++){
+
+<center><fieldset style="display:inline-block; width:256px"><legend style="background:white; border-radius:500px">@names[c]</legend>
+<input type="text" style="width:90%; border:4px solid transparent" id="register_@ids[c]_field" class="required" value="@HttpContextAccessor?.HttpContext?.Request.Cookies[ids[c]]">
+</fieldset></center><br>
+}
+
+ids.Remove("phnumber"); names.Remove("Phone number (optional)");
+} <script>document.getElementById("register_phnumber_field").removeAttribute("class");
+  document.getElementById("register_pword_field").setAttribute("type","password");
+  document.getElementById("register_rptword_field").setAttribute("type","password");</script>
+
+
+<center><fieldset style="display:inline-block; width:256px"><legend style="background:white; border-radius:500px">Additional contact (optional)</legend>
+<textarea style="width:90%; font-family:arial; border:4px solid transparent" id="register_contact_field">@HttpContextAccessor?.HttpContext?.Request.Cookies["contact"]</textarea>
+</fieldset></center><br>
+
+
+<center><fieldset style="display:inline-block; cursor:pointer" id="register_button">Register</fieldset></center><br>
+
+</div>
+
+
+<div>
+<script>var ids= [];</script>
+
+@for(int c=0;c<@ids.Count;c++){<script>ids.push("@ids[c]");</script>}
+</div>
+
+
+<script>
+document.getElementById("register_button").addEventListener("click", function(){
+
+for(c=0;c<ids.length;c++){document.getElementsByClassName("required")[c].style.border="4px solid transparent";}
+
+
+var error=0;
+for(c=0;c<ids.length;c++){
+if(document.getElementById("register_"+ids[c]+"_field").value.length==0){document.getElementsByClassName("required")[c].style.border="4px solid red"; error++;}
+}
+
+
+
+if(
+
+(document.getElementById("register_pword_field").value.length>0 && document.getElementById("register_rptword_field").value.length>0)
+&&
+(document.getElementById("register_pword_field").value != document.getElementById("register_rptword_field").value)
+
+){
+document.getElementById("register_pword_field").style.border="4px solid orange"; document.getElementById("register_rptword_field").style.border="4px solid orange";}
+
+
+if(document.getElementById("register_uname_field").value.toUpperCase()=="USERS"){error++; alert('The username cannot be set to "'+document.getElementById("register_uname_field").value+'".')}
+
+
+if(error==0 && (document.getElementById("register_pword_field").value == document.getElementById("register_rptword_field").value)){
+
+document.cookie= "cmd=register; path=/";
+
+document.cookie= "uname="+encodeURIComponent(document.getElementById("register_uname_field").value)+"; path=/";
+document.cookie= "dname="+encodeURIComponent(document.getElementById("register_dname_field").value)+"; path=/";
+document.cookie= "pword="+encodeURIComponent(document.getElementById("register_pword_field").value)+"; path=/";
+
+document.cookie= "email="+encodeURIComponent(document.getElementById("register_email_field").value)+"; path=/";
+document.cookie= "phnumber="+encodeURIComponent(document.getElementById("register_phnumber_field").value)+"; path=/";
+document.cookie= "location="+encodeURIComponent(document.getElementById("register_location_field").value)+"; path=/";
+document.cookie= "contact="+encodeURIComponent(document.getElementById("register_contact_field").value)+"; path=/";
+
+window.postMessage("refresh");
+}
+
+
+})
+</script>
+
+
+</body>

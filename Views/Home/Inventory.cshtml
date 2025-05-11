@@ -1,0 +1,563 @@
+﻿@using System.Data.SqlClient;
+@using Microsoft.AspNetCore.Mvc;
+@using System.Globalization;
+
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor;
+@{
+    var cfg= WebApplication.CreateBuilder().Configuration;
+    string? connStr= cfg.GetValue<string>("ConnectionString");
+
+
+    var cookieoptions= new CookieOptions{Path="/"};
+
+    string? command= HttpContextAccessor?.HttpContext?.Request.Cookies["cmd"];
+
+
+
+    if(command=="additem"){
+
+    SqlConnection connection= new SqlConnection(connStr);
+    int rowmaxindex=0;
+
+    string sqlqry= "select rowmaxindex from dbo.users where uname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"'";
+
+    connection.Open();
+
+    SqlCommand cmdd= new SqlCommand(sqlqry,connection);
+    SqlDataReader reader= cmdd.ExecuteReader();
+    while(reader.Read()){rowmaxindex= (int)reader[0];} connection.Close();
+
+    rowmaxindex++;
+
+
+    string lastship= (string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_lastship"];
+    lastship= lastship.Replace("T"," ");
+
+    string? nextship="NULL";
+    try{
+    if((string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_nextship"].GetType().Name!="String.Empty"){
+    
+    nextship= "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_nextship"]+"'";
+    nextship= nextship.Replace("T"," ");}
+    }catch{}
+
+    
+    sqlqry= "INSERT INTO dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" (i_item,i_price,i_details,i_category,i_qty,i_lastship,i_nextship,rowindex) values("+
+    "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_name"]+"',"+
+    "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_price"]+"',"+
+    "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_details"]+"',"+
+    "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_category"]+"',"+
+    "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_qty"]+"',"+
+    "'"+lastship+"',"+
+    ""+nextship+","+
+    "'"+rowmaxindex+"'"
+
+
++");";
+    connection.Open();
+
+    cmdd= new SqlCommand(sqlqry,connection);
+    reader= cmdd.ExecuteReader();
+    while(reader.Read()){} connection.Close();
+
+
+
+    sqlqry= "update dbo.users set rowmaxindex="+rowmaxindex+" where(uname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"')";
+    connection.Open();
+
+    cmdd= new SqlCommand(sqlqry,connection);
+    reader= cmdd.ExecuteReader();
+    while(reader.Read()){} connection.Close();
+
+
+    HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+    
+    <script>window.location=window.location</script>
+
+    }
+
+
+
+
+    if(command=="sell"){
+    HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+    // selected qty at cmd_arg2
+    // index at cmd_arg
+    
+    SqlConnection connection= new SqlConnection(connStr);
+    int rowmaxindex=0;
+
+    string sqlqry= "select rowmaxindex from dbo.users where uname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"'";
+
+    connection.Open();
+
+    SqlCommand cmdd= new SqlCommand(sqlqry,connection);
+    SqlDataReader reader= cmdd.ExecuteReader();
+    while(reader.Read()){rowmaxindex= (int)reader[0];} connection.Close();
+
+    rowmaxindex++;
+
+
+    int itemqty=0; // value in sql server
+
+    string itemname="";
+    string itemprice="";
+    string itemdetails="";
+    string itemcategory="";
+
+    
+    sqlqry= "select i_item,i_price,i_details,i_category,i_qty from dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" where rowindex="+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg"];
+    connection.Open();
+
+    cmdd= new SqlCommand(sqlqry,connection);
+    reader= cmdd.ExecuteReader();
+    while(reader.Read()){
+
+    itemname= (string)reader[0];
+    itemprice= (string)reader[1];
+    itemdetails= (string)reader[2];
+    itemcategory= (string)reader[3];
+    itemqty= (int)reader[4];
+
+    } connection.Close();
+
+
+
+
+    if(itemqty>=int.Parse((string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg2"])){
+
+    sqlqry="update dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" set i_qty="+(itemqty-int.Parse((string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg2"])).ToString()+" where rowindex="+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg"];
+    connection.Open();
+
+    cmdd= new SqlCommand(sqlqry,connection);
+    reader= cmdd.ExecuteReader();
+    
+    
+    while(reader.Read()){} connection.Close();
+    
+
+    
+
+    sqlqry= "INSERT INTO dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" (s_item,s_price,s_qty,s_category,s_time,s_details,rowindex) values("+
+    "'"+itemname+"',"+
+    "'"+itemprice+" ["+(float.Parse(itemprice, CultureInfo.GetCultureInfo("en-US"))*int.Parse((string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg2"]))+"]"+"',"+
+    "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg2"]+"',"+
+    "'"+itemcategory+"',"+
+    "'"+DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")+"',"+
+    "'"+itemdetails+"',"+
+    rowmaxindex
+
++");";
+    connection.Open();
+
+    cmdd= new SqlCommand(sqlqry,connection);
+    reader= cmdd.ExecuteReader();
+
+    while(reader.Read()){} connection.Close();
+
+
+
+
+    sqlqry= "update dbo.users set rowmaxindex="+rowmaxindex+" where(uname='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+"')";
+    connection.Open();
+
+    cmdd= new SqlCommand(sqlqry,connection);
+    reader= cmdd.ExecuteReader();
+    while(reader.Read()){} connection.Close();
+
+    }
+
+
+
+
+
+    <script>window.location=window.location</script>
+    }
+
+
+
+
+    if(command=="updateitem"){
+    HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+
+    string lastship= (string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_lastship"];
+    lastship= lastship.Replace("T"," ");
+
+    string? nextship="NULL";
+    try{
+    if((string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_nextship"].GetType().Name!="String.Empty"){
+
+    nextship= "'"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_nextship"]+"'";
+    nextship= nextship.Replace("T"," ");}
+    }catch{}
+
+
+    SqlConnection connection= new SqlConnection(connStr);
+
+    string sqlqry= "update dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" set "+
+    "i_item='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_name"]+"',"+
+    "i_price='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_price"]+"',"+
+    "i_details='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_details"]+"',"+
+    "i_category='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_category"]+"',"+
+    "i_qty='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["newitem_qty"]+"',"+
+    "i_lastship='"+lastship+"',"+
+    "i_nextship="+nextship+" "+
+    "where rowindex='"+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg"]+"';"
+    
+
+    ; connection.Open();
+
+    SqlCommand cmdd= new SqlCommand(sqlqry,connection);
+    SqlDataReader reader= cmdd.ExecuteReader();
+    while(reader.Read()){} connection.Close();
+
+
+
+    <script>window.location=window.location</script>
+    }
+
+
+
+
+    if(command=="kill"){
+
+    HttpContextAccessor?.HttpContext?.Response.Cookies.Append("cmd","",cookieoptions);
+
+    SqlConnection connection= new SqlConnection(connStr);
+
+   string sqlqry= "delete from dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" where rowindex="+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["cmd_arg"];
+
+    connection.Open();
+
+    SqlCommand cmdd= new SqlCommand(sqlqry,connection);
+    SqlDataReader reader= cmdd.ExecuteReader();
+    while(reader.Read()){} connection.Close();
+
+
+    <script>window.location=window.location</script>
+
+    }
+
+
+
+
+}
+
+<body>
+
+
+
+<style>
+table, td{border:2px solid black; border-collapse:collapse;}
+h3{margin-top:0px; margin-bottom:0px;}
+</style>
+
+<fieldset style="border-radius:30px"><legend><button onclick="window.postMessage('goto mainmenu')"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Back_Arrow.svg/800px-Back_Arrow.svg.png?20131211215511" style="width:20px"></button>&nbsp;
+<text style="background:white; border:2px solid white; border-radius:500px"><b>Inventory</b></text></legend>
+
+
+
+<div id="inventorytable" style="height:75vh; overflow-y:auto">
+
+<table style="width:100%" id="invtable"><tbody>
+
+<tr>	<td style="background:white"><h3 class="tabletext">ITEM</h3></td> <td style="background: white"><h3 class="tabletext">RP</h3></td> <td style="background: white"><h3 class="tabletext">DETAILS</h3></td> <td style="background:white"><h3 class="tabletext">CATEGORY</h3></td> <td style="background:white"><h3 class="tabletext">QTY</h3></td> <td style="background:white"><h3 class="tabletext">LAST SHIPPED</h3></td> <td style="background:white"><h3 class="tabletext">NEXT SHIPPING</h3></td>	</tr>
+
+@{ SqlConnection conn= new SqlConnection(connStr);
+string sql= "select i_item,i_price,i_details,i_category,i_qty,i_lastship,i_nextship,rowindex from dbo."+(string?)HttpContextAccessor?.HttpContext?.Request.Cookies["uname_login"]+" order by rowindex";
+
+conn.Open();
+SqlCommand cmd= new SqlCommand(sql,conn);
+SqlDataReader rdr= cmd.ExecuteReader();
+
+string tlship=""; string tnship=""; int c=0;
+while(rdr.Read()){ if(rdr[0].GetType().ToString()!="System.DBNull"){ c++;
+tlship= ((DateTime)rdr[5]).ToString("yyyy-MM-ddTHH:mm:ss");
+try{tnship= ((DateTime)rdr[6]).ToString("yyyy-MM-ddTHH:mm:ss");}catch{tnship="";}
+
+<tr class="selectable" id="@c" tname="@rdr[0]" tprice="@rdr[1]" tdetails="@rdr[2]" tcategory="@rdr[3]" tqty="@rdr[4]" tlship="@tlship" tnship="@tnship" onclick="
+
+if(document.getElementById('inventory_sell').style.background.indexOf('360deg')!=-1){
+
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.background= 'transparent';}
+this.style.background= 'linear-gradient(540deg, #FF6, #BB2)';
+
+document.cookie= 'cmd_arg=@rdr[7]; path=/';
+document.getElementById('sellitem_titlebar').innerText= 'Sell &quot;'+this.children[0].innerText+'&quot;';
+document.getElementById('sellitem_prompt').style.visibility='visible';
+}
+
+
+if(document.getElementById('inventory_edit').style.background.indexOf('360deg')!=-1){
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.background= 'transparent';}
+this.style.background= 'linear-gradient(540deg, #0AF, #06B)';
+
+document.getElementById('newitem_titlebar').innerText= 'Edit &quot;'+this.children[0].innerText+'&quot;';
+
+
+for(c=0;c<document.getElementById('newitem_prompt').getElementsByTagName('input').length;c++){document.getElementById('newitem_prompt').getElementsByTagName('input')[c].value='';}
+document.getElementsByName('objtype')[0].checked=false;
+document.getElementsByName('objtype')[1].checked=false;
+document.getElementsByName('objtype')[2].checked=false;
+document.getElementsByName('objtype')[3].checked=false;
+
+document.getElementById('additem_name').value= this.getAttribute('tname');
+document.getElementById('additem_details').value= this.getAttribute('tdetails');
+
+var price= this.getAttribute('tprice');
+document.getElementById('additem_priceh').value= price.slice(0,price.indexOf('.'));
+document.getElementById('additem_pricel').value= price.slice(price.indexOf('.')+1);
+
+document.getElementById('additem_qty').value= this.getAttribute('tqty');
+
+if(this.getAttribute('tcategory')=='Hardware'){document.getElementById('objtype_select1').click();}
+if(this.getAttribute('tcategory')=='Software'){document.getElementById('objtype_select2').click();}
+if(this.getAttribute('tcategory')=='Tool'){document.getElementById('objtype_select3').click();}
+if(this.getAttribute('tcategory')!='Hardware' && this.getAttribute('tcategory')!='Software' && this.getAttribute('tcategory')!='Tool')
+{document.getElementById('objtype_select4').click(); document.getElementById('additem_customtype').value=this.getAttribute('tcategory');}
+
+document.getElementById('additem_lastship').value= this.getAttribute('tlship');
+document.getElementById('additem_nextship').value= this.getAttribute('tnship');
+
+document.getElementById('newitem_prompt').style.visibility='visible';
+
+document.cookie= 'cmd_arg=@rdr[7]; path=/';
+}
+
+
+if(document.getElementById('inventory_kill').style.background.indexOf('360deg')!=-1){
+document.cookie= 'cmd=kill; path=/'; document.cookie= 'cmd_arg=@rdr[7]; path=/';
+window.location=window.location;
+}
+
+">
+<td><div class="tabletext">@rdr[0]</div></td>	<td><div class="tabletext">@rdr[1]</div></td>	<td><div class="tabletext">@rdr[2]</div></td> <td><div class="tabletext">@rdr[3]</div></td>	<td><div class="tabletext">@rdr[4]</div></td>	<td><div class="tabletext">@rdr[5]</div></td>	<td><div class="tabletext">@rdr[6]</div></td>
+</tr>
+}}
+}
+
+<tr>	<td style="background:white"><h3 class="tabletext">ITEM</h3></td> <td style="background: white"><h3 class="tabletext">RP</h3></td> <td style="background: white"><h3 class="tabletext">DETAILS</h3></td> <td style="background:white"><h3 class="tabletext">CATEGORY</h3></td> <td style="background:white"><h3 class="tabletext">QTY</h3></td> <td style="background:white"><h3 class="tabletext">LAST SHIPPED</h3></td> <td style="background:white"><h3 class="tabletext">NEXT SHIPPING</h3></td>	</tr>
+
+</tbody></table>
+
+
+
+</div>
+
+</fieldset>
+
+<br>
+<br>
+<br>
+<br>
+
+<marquee direction="up" behavior="slide" scrollamount="20" style="position:fixed;bottom:0px">
+
+<fieldset><legend style="background:white; border-radius:500px" id="invent_legend">0 item(s)</legend>
+<center>
+<fieldset title="New" style="display:inline-block; border-radius:15px; cursor:pointer; background:#FFF" onclick="document.getElementById('newitem_titlebar').innerText= 'Add new item to inventory'; document.getElementById('newitem_prompt').style.visibility='visible'">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;➕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</fieldset>
+
+<fieldset id="inventory_sell" title="Sell" style="display:inline-block; border-radius:30px 30% 30px 30%; cursor:pointer; background:linear-gradient(540deg, #FF6, #BB2)"
+onclick="if(this.style.background.indexOf('360deg')==-1){
+this.style.background=this.style.background.replace('540deg','360deg');
+document.getElementById('inventory_edit').style.background=document.getElementById('inventory_edit').style.background.replace('360deg','540deg');
+document.getElementById('inventory_kill').style.background=document.getElementById('inventory_kill').style.background.replace('360deg','540deg');
+
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.cursor='crosshair';}
+
+}else{this.style.background=this.style.background.replace('360deg','540deg');
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.cursor='auto';}
+}"
+>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;💰&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</fieldset>
+
+<fieldset id="inventory_edit" title="Edit" style="display:inline-block; border-radius:30px 30% 30px 30%; cursor:pointer; background:linear-gradient(540deg, #0AF, #06B); color:white"
+onclick="if(this.style.background.indexOf('360deg')==-1){
+this.style.background=this.style.background.replace('540deg','360deg');
+document.getElementById('inventory_sell').style.background=document.getElementById('inventory_sell').style.background.replace('360deg','540deg');
+document.getElementById('inventory_kill').style.background=document.getElementById('inventory_kill').style.background.replace('360deg','540deg');
+
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.cursor='crosshair';}
+
+}else{this.style.background=this.style.background.replace('360deg','540deg');
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.cursor='auto';}
+}"
+>
+✏</fieldset>
+
+<fieldset id="inventory_kill" title="Kill" style="display:inline-block; border-radius:30px 30% 30px 30%; cursor:pointer; background:linear-gradient(540deg, #F66, #B22); color:white"
+onclick="if(this.style.background.indexOf('360deg')==-1){
+this.style.background=this.style.background.replace('540deg','360deg');
+document.getElementById('inventory_sell').style.background=document.getElementById('inventory_sell').style.background.replace('360deg','540deg');
+document.getElementById('inventory_edit').style.background=document.getElementById('inventory_edit').style.background.replace('360deg','540deg');
+
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.cursor='crosshair';}
+
+}else{this.style.background=this.style.background.replace('360deg','540deg');
+for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.cursor='auto';}
+}"
+>
+✖</fieldset>
+
+
+</center>
+
+</fieldset>
+
+</marquee>
+
+
+<script>document.getElementById("invent_legend").innerText= document.getElementsByClassName("selectable")[document.getElementsByClassName("selectable").length-1].id+" item(s)"</script>
+
+
+<div id="newitem_prompt" style="position:fixed; left:0px; top:0px; width:100vw; height:100vh; visibility:hidden">
+<div style="left:10vw; width:50vw; position:fixed; top:0px; backdrop-filter:blur(4px);">
+
+<fieldset style="border-radius:30px 10% 30% 30px; background:#FFFFFF7F"><legend><button onclick="for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.background= 'transparent'}; document.getElementById('newitem_prompt').style.visibility='hidden'">Cancel</button>&nbsp;&nbsp;<b style="background:white; border:2px solid white; border-radius:500px" id="newitem_titlebar">Add new item to inventory</b>
+<button id="ok_button" style="position:absolute; right:5%">OK</button></legend>
+
+<fieldset style="border-radius:30px 30% 30px 30%"><legend style="background:black; border-radius:10px; color:white">Name:</legend>
+<center>
+<input id="additem_name" class="additemField" type="text" style="border-radius:10px; width:95%"></center>
+</fieldset>
+
+<fieldset><legend style="background:black; border-radius:10px; color:white">Details (opt.):</legend>
+<center>
+<input id="additem_details" type="text" style="border-radius:10px; width:95%"></center>
+</fieldset>
+
+
+<fieldset style="display:inline-block"><legend style="background:black; border-radius:10px; color:white">Retail Price:</legend>
+<input id="additem_priceh" class="additemField" inputmode="numeric" oninput="this.value = this.value.replace(/\D+/g, '')" style="text-align:right; width:80px; border-radius:10px 0px 0px 10px">
+<text style="background:white">.</text>
+<input id="additem_pricel" class="additemField" inputmode="numeric" oninput="this.value = this.value.replace(/\D+/g, '')" style="width:26px; border-radius:0px 10px 10px 0px" maxlength="2">
+</fieldset>
+
+<fieldset style="display:inline-block"><legend style="background:black; border-radius:10px; color:white">Quantity:</legend>
+<input id="additem_qty" class="additemField" type="number" min=0 oninput="this.value = this.value.replace(/\D+/g, '')" style="width:56px; border-radius:10px">
+</fieldset><br>
+
+
+<fieldset style="display:inline-block"><legend style="background:black; border-radius:10px; color:white">Category:</legend>
+<input type="radio" name="objtype" id="objtype_select1" style=""><label for="objtype_select1">Hardware</label>
+<input type="radio" name="objtype" id="objtype_select2" style=""><label for="objtype_select2">Software</label>
+<input type="radio" name="objtype" id="objtype_select3" style=""><label for="objtype_select3">Tool</label>
+<center><input type="radio" name="objtype" id="objtype_select4" style=""><label for="objtype_select4"><input id="additem_customtype" type="text" style="border-radius:10px" onclick="document.getElementById('objtype_select4').click();"></label>
+</center>
+</fieldset><br>
+
+
+
+<fieldset style="display:inline-block"><legend style="background:black; border-radius:10px; color:white">Last shipped:</legend>
+<input id="additem_lastship" class="additemField" type="datetime-local" style="border-radius:10px">
+</fieldset>
+
+<fieldset style="display:inline-block"><legend style="background:black; border-radius:10px; color:white">Next shipping (opt.):</legend>
+<input id="additem_nextship" type="datetime-local" style="border-radius:10px">
+</fieldset>
+
+</fieldset>
+
+
+</div>
+
+</div>
+
+
+
+
+<div id="sellitem_prompt" style="position:fixed; left:0px; top:0px; width:100vw; height:100vh; visibility:hidden">
+<div style="left:25vw; position:fixed; top:40vh; backdrop-filter:blur(4px);">
+
+<fieldset style="border-radius:30px 10% 30% 30px; background:#FFFFFF7F"><legend><button onclick="for(c=0;c<document.getElementsByClassName('selectable').length;c++){document.getElementsByClassName('selectable')[c].style.background= 'transparent'}; document.getElementById('sellitem_prompt').style.visibility='hidden'">Cancel</button>&nbsp;&nbsp;<b style="background:white; border:2px solid white; border-radius:500px" id="sellitem_titlebar">Sell an item</b>&nbsp;&nbsp;<button id="ok_button_sell">OK</button></legend>
+
+<fieldset style="border-radius:30px 30% 30px 30%"><legend style="background:white; border-radius:10px; color:black">How many units?</legend>
+<center><input id="sellitem_qty" type="number" value=1 min=1 style="border-radius:10px; width:64px"> out of X</center>
+</fieldset>
+
+
+
+</fieldset>
+</div>
+</div>
+
+<script>
+document.getElementById("ok_button_sell").addEventListener("click", function(){
+if(document.getElementById("sellitem_qty").value.length>0){
+document.cookie= "cmd_arg2="+document.getElementById("sellitem_qty").value+";path=/"; document.cookie="cmd=sell;path=/";
+window.location=window.location;
+}
+})
+</script>
+
+
+<script>
+
+document.getElementById("ok_button").addEventListener("click", function(){
+
+if(document.getElementById("additem_pricel").value.length==1){document.getElementById("additem_pricel").value= document.getElementById("additem_pricel").value+"0";}
+if(document.getElementById("additem_pricel").value.length==0){document.getElementById("additem_pricel").value= "00";}
+
+if(document.getElementById("additem_priceh").value.length==0){document.getElementById("additem_priceh").value= "0";}
+
+
+var error=0; var categoryString;
+
+//console.log(document.getElementsByClassName("additemField"));
+
+for(c=0;c<document.getElementsByClassName("additemField").length;c++){
+if(document.getElementsByClassName("additemField")[c].value.length==0){error++;}
+}
+
+if(document.getElementById("objtype_select1").checked ==false && document.getElementById("objtype_select2").checked ==false && document.getElementById("objtype_select3").checked ==false && document.getElementById("objtype_select4").checked ==false){error++;}
+
+
+if(error==0){
+for(c=1;c<4;c++){
+
+if(document.getElementById("objtype_select"+String(c)).checked ==true){categoryString= document.getElementById("objtype_select"+String(c)).nextSibling.innerText;}
+
+}
+
+if(document.getElementById("objtype_select4").checked ==true){categoryString= document.getElementById("objtype_select4").nextSibling.children[0].value;}
+
+if(document.getElementById("objtype_select4").checked ==true && document.getElementById("objtype_select4").nextSibling.children[0].value.length==0){error++;}
+
+}
+
+//console.log(error);
+//console.log(categoryString);
+
+
+
+
+if(error==0){
+
+if(document.getElementById("newitem_titlebar").innerText.charAt(0)=="A"){
+document.cookie= "cmd=additem;path=/";} else
+{document.cookie= "cmd=updateitem;path=/";}
+
+document.cookie= "newitem_name="+encodeURIComponent(document.getElementById("additem_name").value)+";path=/";
+document.cookie= "newitem_details="+encodeURIComponent(document.getElementById("additem_details").value)+";path=/";
+document.cookie= "newitem_price="+Number(String(document.getElementById("additem_priceh").value)+"."+String(document.getElementById("additem_pricel").value)).toFixed(2)+";path=/";
+document.cookie= "newitem_qty="+document.getElementById("additem_qty").value+";path=/";
+document.cookie= "newitem_category="+encodeURIComponent(categoryString)+";path=/";
+document.cookie= "newitem_lastship="+document.getElementById("additem_lastship").value+";path=/";
+document.cookie= "newitem_nextship="+document.getElementById("additem_nextship").value+";path=/";
+
+
+
+for(c=0;c<document.getElementById("newitem_prompt").getElementsByTagName("input").length;c++){document.getElementById("newitem_prompt").getElementsByTagName("input")[c].value="";}
+
+window.location=window.location;
+}
+
+})
+
+</script>
+
+
+
+</body>
